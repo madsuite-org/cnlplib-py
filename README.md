@@ -32,62 +32,15 @@ model instances may coexist per library.
 
 ## The C ABI
 
-This package implements **cnlp ABI v0.1**; the normative specification is
-[`cnlp.h` at the v0.1 tag](https://github.com/madsuite-org/cnlp-abi/blob/v0.1/cnlp.h) — the header is the spec, and a
-byte-identical copy is vendored at `tests/fixtures/cnlp.h`, where the fixture
-expands its declarations so signature drift fails compilation. The summary
-below is informative; where they disagree, the header wins.
+This package consumes **cnlp ABI 0.2**: [`cnlp.h`](https://github.com/madsuite-org/cnlp-abi/blob/master/cnlp.h)
+is the specification (every integer is `int64_t`, indices are 1-based inside the ABI and
+0-based here). A copy is vendored at `tests/fixtures/cnlp.h`, which the fixture compiles
+against so signature drift fails the build.
 
-For a symbol prefix `P` (the name-based loader defaults it to the library
-name), the library exports the functions below. Conventions:
+`m.minimize` is the objective sense (`P_minimize`; a library without it minimizes).
 
-- every function returns `int32` **status**: `0` = success (except `P_new`,
-  `P_data_begin`, `P_new_from_data`, `P_schema`, which return positive
-  values as described);
-- indices are **1-based inside the ABI** (this wrapper shifts to 0-based);
-- the Hessian is the **lower triangle** of `obj_weight * ∇²f(x) + Σᵢ yᵢ ∇²cᵢ(x)`;
-- buffers are caller-allocated dense `double` / `int32` / `int64` arrays.
-
-### Instantiation
-
-```c
-int32_t P_new(int32_t n);          // → model id (>0), 0 on failure
-```
-
-### Metadata and evaluation (per instance `id`)
-
-```c
-int32_t P_nvar(int32_t id);  P_ncon(id);  P_nnzj(id);  P_nnzh(id);
-int32_t P_meta(int32_t id, double* x0, double* lvar, double* uvar,
-               double* lcon, double* ucon);                        // ±INFINITY ok
-int32_t P_obj (int32_t id, const double* x, double* out);
-int32_t P_grad(int32_t id, const double* x, double* g);            // length nvar
-int32_t P_cons(int32_t id, const double* x, double* c);            // length ncon
-int32_t P_jac_structure(int32_t id, int32_t* rows, int32_t* cols); // nnzj, 1-based
-int32_t P_jac (int32_t id, const double* x, double* vals);         // nnzj
-int32_t P_hess_structure(int32_t id, int32_t* rows, int32_t* cols);// nnzh, 1-based
-int32_t P_hess(int32_t id, const double* x, const double* y,
-               double obj_weight, double* vals);                   // nnzh
-```
-
-### Structured instantiation (optional)
-
-Libraries built from structured data publish a JSON schema and take the data
-through a builder — tables cross the boundary **as columns**:
-
-```c
-int32_t P_schema(uint8_t* buf, int32_t len);        // returns needed length
-int32_t P_data_begin(void);                         // → builder id
-int32_t P_set_scalar_f64(int32_t b, const char* field, double v);       // _i64 too
-int32_t P_set_array_f64 (int32_t b, const char* field, const double* v, int32_t len);
-int32_t P_set_col_f64   (int32_t b, const char* table, const char* col,
-                         const double* v, int32_t len);                 // _i64 too
-int32_t P_data_ready    (int32_t b);                // 1 iff complete and consistent
-int32_t P_new_from_data (int32_t b);                // → model id
-```
-
-From Python the arguments are positional, one per schema field, in the order
-the library publishes them — a table is a dict of equal-length columns:
+Libraries built from structured data take their arguments positionally, one per schema
+field, in the order the library publishes them; a table is a dict of equal-length columns:
 
 ```python
 m = cnlpmodels.CModel("@mymodel",
@@ -95,16 +48,10 @@ m = cnlpmodels.CModel("@mymodel",
     np.array([0.9, 0.9]),                                  # an array
     100.0,                                                 # a scalar
 )
-m = cnlpmodels.CModel("@scalable", 1000)  # one integer: <prefix>_new when
-                                          # exported, else the builder
+m = cnlpmodels.CModel("@scalable", 1000)  # one integer: <prefix>_new when exported
 ```
 
-which is the same spelling the producer side uses — `ExaModel(core, arg1,
-arg2, ...)` to instantiate a recipe, `compile_library(out, core, arg1, ...)`
-to compile one — so a model is consumed the way it was written. A library
-compiled from a recipe names its fields `arg1`, `arg2`, ... for that reason.
-Each value is checked against the kind and type the schema declares for its
-slot; nothing is coerced across it.
+Each value is checked against the kind and type the schema declares; nothing is coerced.
 
 ### Several models in one library
 
@@ -127,24 +74,8 @@ spelling as CNLPModels.jl's `CNLPModel(lib, :acopf, ...)`.
 
 ## Implementing a compatible library
 
-1. Export the functions above with C linkage under one prefix.
-2. Keep instances behind integer ids (a static table suffices — see the
-   reference implementation).
-3. Return `0`/positive ids on success, nonzero/`0` on failure; never let an
-   exception cross the boundary.
-4. Validate against `tests/fixtures/tinyqp.c` and this test suite, which
-   compiles that file and checks every function against closed-form values,
-   including a solve to the model's known optimum. The file carries two
-   models: `tq_`, instantiated from one integer, and `sq_`, which has no
-   one-integer constructor and is built from a three-field schema through the
-   builder.
-5. Publish only what a library of any origin can honestly answer: names, sizes,
-   offsets, dimensions, argument types, descriptions. This interface is a
-   generic abstraction over "an NLP behind a C boundary", and it deliberately
-   stops short of a model's algebraic structure — an expression tree is a
-   particular modelling package's representation, not something a hand-written
-   library could produce, and asking for one would make this that package's
-   interface in C clothing rather than an interface anyone can implement.
+Follow `cnlp.h`, and validate against `tests/fixtures/tinyqp.c` and this test suite,
+which compiles that file and checks every function against closed-form values.
 
 Sibling package:
 [`CNLPModels.jl`](https://github.com/madsuite-org/CNLPModels.jl) — the same

@@ -38,6 +38,7 @@ def test_meta(m):
     assert np.all(np.isinf(m.lvar)) and np.all(m.lvar < 0)
     assert np.all(np.isinf(m.uvar)) and np.all(m.uvar > 0)
     assert m.lcon.tolist() == [0.0] and m.ucon.tolist() == [0.0]
+    assert m.minimize   # no sense tier, or P_minimize = 1
 
 
 def test_evaluations_match_closed_form(m):

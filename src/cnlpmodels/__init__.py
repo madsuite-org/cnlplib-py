@@ -10,15 +10,15 @@ Implements cnlp ABI v0.1 (normative spec: cnlp.h at
 https://github.com/madsuite-org/cnlp-abi, tag v0.1).
 
 C ABI (for a symbol ``prefix``; 1-based indices, lower-triangle Lagrangian
-Hessian of ``obj_weight * f + y' c``, ``int32`` statuses, 0 = success)::
+Hessian of ``obj_weight * f + y' c``, ``int64`` statuses, 0 = success)::
 
     <prefix>_new(n)               -> id > 0 (0 on failure)
-    <prefix>_nvar/_ncon/_nnzj/_nnzh(id) -> int32
+    <prefix>_nvar/_ncon/_nnzj/_nnzh(id) -> int64
     <prefix>_meta(id, x0, lvar, uvar, lcon, ucon)         (double* x 5)
     <prefix>_obj(id, x, out)      / _grad(id, x, g) / _cons(id, x, c)
-    <prefix>_jac_structure(id, rows, cols)   (int32*, 1-based)
+    <prefix>_jac_structure(id, rows, cols)   (int64_t*, 1-based)
     <prefix>_jac(id, x, vals)
-    <prefix>_hess_structure(id, rows, cols)  (int32*, 1-based)
+    <prefix>_hess_structure(id, rows, cols)  (int64_t*, 1-based)
     <prefix>_hess(id, x, y, obj_weight, vals)
 
 Model protocol (duck-typed, shared with ``examodels``): attributes ``nvar``,
@@ -41,7 +41,7 @@ __all__ = ["BlockRef", "CModel", "argtype", "available_models", "lib", "load",
 
 from .ipopt import solve_ipopt
 
-_c_int = ctypes.c_int32
+_c_int = ctypes.c_int64
 _c_dbl = ctypes.c_double
 _pd = ctypes.POINTER(_c_dbl)
 _pi = ctypes.POINTER(_c_int)
@@ -525,7 +525,7 @@ def _read_layout(lib, prefix, mid):
     npf.argtypes = [_c_int, _c_int, ctypes.POINTER(ctypes.c_uint8), _c_int]
     vars_, cons_, pars_ = {}, {}, {}
     for k in range(n):
-        out = np.zeros(12, dtype=np.int32)
+        out = np.zeros(12, dtype=np.int64)
         _check(bp(_c_int(mid), _c_int(k), _iarr(out)), f"{prefix}_block")
         need = int(npf(_c_int(mid), _c_int(k),
                        ctypes.cast(0, ctypes.POINTER(ctypes.c_uint8)), _c_int(0)))
@@ -643,6 +643,11 @@ class CModel:
         _check(self._fn["meta"](self._id, _arr(self.x0), _arr(self.lvar),
                                 _arr(self.uvar), _arr(self.lcon), _arr(self.ucon)),
                "meta")
+        # Objective sense (sense tier, optional): a library without it minimizes.
+        mn = getattr(lib, f"{prefix}_minimize", None)
+        if mn is not None:
+            mn.restype, mn.argtypes = _c_int, [_c_int]
+        self.minimize = mn is None or int(mn(self._id)) != 0
 
     def _x(self, x):
         x = np.ascontiguousarray(x, dtype=np.float64)
@@ -666,8 +671,8 @@ class CModel:
         return c
 
     def jac_structure(self):
-        rows = np.zeros(self.nnzj, dtype=np.int32)
-        cols = np.zeros(self.nnzj, dtype=np.int32)
+        rows = np.zeros(self.nnzj, dtype=np.int64)
+        cols = np.zeros(self.nnzj, dtype=np.int64)
         _check(self._fn["jac_structure"](self._id, _iarr(rows), _iarr(cols)),
                "jac_structure")
         return rows - 1, cols - 1        # 0-based, per Python convention
@@ -678,8 +683,8 @@ class CModel:
         return v
 
     def hess_structure(self):
-        rows = np.zeros(self.nnzh, dtype=np.int32)
-        cols = np.zeros(self.nnzh, dtype=np.int32)
+        rows = np.zeros(self.nnzh, dtype=np.int64)
+        cols = np.zeros(self.nnzh, dtype=np.int64)
         _check(self._fn["hess_structure"](self._id, _iarr(rows), _iarr(cols)),
                "hess_structure")
         return rows - 1, cols - 1        # 0-based, per Python convention

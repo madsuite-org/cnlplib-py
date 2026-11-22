@@ -6,16 +6,18 @@ __all__ = ["solve_ipopt"]
 
 def solve_ipopt(model, x0=None, **options):
     """Solve `model` (anything implementing the cnlpmodels protocol) with
-    Ipopt. Returns `(x, info)` as given by cyipopt. Options are passed to
+    Ipopt, maximizing when the model does. Returns `(x, info)` as given by cyipopt. Options are passed to
     Ipopt verbatim (e.g. ``print_level=0``, ``tol=1e-8``)."""
     import cyipopt  # deferred: [ipopt] extra
 
+    sg = 1.0 if getattr(model, "minimize", True) else -1.0   # Ipopt minimizes
+
     class _Problem:
         def objective(self, x):
-            return model.obj(x)
+            return sg * model.obj(x)
 
         def gradient(self, x):
-            return model.grad(x)
+            return sg * model.grad(x)
 
         def constraints(self, x):
             return model.cons(x)
@@ -30,7 +32,7 @@ def solve_ipopt(model, x0=None, **options):
             return model.hess_structure()
 
         def hessian(self, x, lagrange, obj_factor):
-            return model.hess(x, lagrange, obj_weight=obj_factor)
+            return model.hess(x, lagrange, obj_weight=sg * obj_factor)
 
     nlp = cyipopt.Problem(
         n=model.nvar, m=model.ncon, problem_obj=_Problem(),
