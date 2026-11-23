@@ -3,7 +3,7 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "cnlpmodels"
+name = "cnlplib"
 version = "0.1.0"
 license = {file = "LICENSE"}
 description = "Consume C-ABI NLP shared libraries (e.g. ExaModels-compiled) as numpy-backed models — no Julia required"

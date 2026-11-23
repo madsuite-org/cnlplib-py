@@ -26,7 +26,7 @@ jobs:
           gfortran pkg-config
       - run: pip install -e . scipy pytest pytest-cov cyipopt "ruff==0.16.2"
       - run: ruff check .
-      - run: pytest -q --cov=cnlpmodels --cov-report=xml
+      - run: pytest -q --cov=cnlplib --cov-report=xml
       - uses: codecov/codecov-action@v5
         with:
           files: coverage.xml

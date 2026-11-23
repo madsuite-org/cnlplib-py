@@ -1,7 +1,7 @@
-# cnlpmodels
+# cnlplib
 
-[![CI](https://github.com/madsuite-org/cnlpmodels-py/actions/workflows/ci.yml/badge.svg)](https://github.com/madsuite-org/cnlpmodels-py/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/madsuite-org/cnlpmodels-py/branch/master/graph/badge.svg)](https://codecov.io/gh/madsuite-org/cnlpmodels-py)
+[![CI](https://github.com/madsuite-org/cnlplib-py/actions/workflows/ci.yml/badge.svg)](https://github.com/madsuite-org/cnlplib-py/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/madsuite-org/cnlplib-py/branch/master/graph/badge.svg)](https://codecov.io/gh/madsuite-org/cnlplib-py)
 
 Load a nonlinear program (NLP) exposed by a **shared library through a plain
 C interface** and use it as a numpy-backed model in Python — evaluate it, or
@@ -15,13 +15,13 @@ complete reference implementation in ~100 lines of plain C, and the test
 suite compiles and exercises it end to end.
 
 ```python
-import cnlpmodels
+import cnlplib
 
-cnlpmodels.set_path("/opt/models")          # or the CNLPMODELS_PATH env variable
+cnlplib.set_path("/opt/models")          # or the CNLPMODELS_PATH env variable
 
-m = cnlpmodels.CModel("@mymodel", 1000)     # resolves libmymodel.so
-# m = cnlpmodels.CModel("/path/to/mymodel", 1000)   # or a literal path
-x, info = cnlpmodels.solve_ipopt(m)         # cyipopt, if installed
+m = cnlplib.CModel("@mymodel", 1000)     # resolves libmymodel.so
+# m = cnlplib.CModel("/path/to/mymodel", 1000)   # or a literal path
+x, info = cnlplib.solve_ipopt(m)         # cyipopt, if installed
 ```
 
 `m` exposes `nvar`, `ncon`, `nnzj`, `nnzh`, `x0`, `lvar`, `uvar`, `lcon`,
@@ -43,12 +43,12 @@ Libraries built from structured data take their arguments positionally, one per 
 field, in the order the library publishes them; a table is a dict of equal-length columns:
 
 ```python
-m = cnlpmodels.CModel("@mymodel",
+m = cnlplib.CModel("@mymodel",
     {"i": np.array([1, 2]), "pd": np.array([0.4, 0.3])},   # a table (columns)
     np.array([0.9, 0.9]),                                  # an array
     100.0,                                                 # a scalar
 )
-m = cnlpmodels.CModel("@scalable", 1000)  # one integer: <prefix>_new when exported
+m = cnlplib.CModel("@scalable", 1000)  # one integer: <prefix>_new when exported
 ```
 
 Each value is checked against the kind and type the schema declares; nothing is coerced.
@@ -61,9 +61,9 @@ selects one by name — the name **is** the prefix its ABI functions are
 exported under (unambiguous, since a model argument is never a string):
 
 ```python
-m = cnlpmodels.CModel("@grid", "acopf", bus, 100.0)  # acopf_* inside libgrid.so
-d = cnlpmodels.CModel("@grid", "dcopf", bus)         # dcopf_* in the same file
-sch = cnlpmodels.schema(lib, "acopf")                # schemas are per model
+m = cnlplib.CModel("@grid", "acopf", bus, 100.0)  # acopf_* inside libgrid.so
+d = cnlplib.CModel("@grid", "dcopf", bus)         # dcopf_* in the same file
+sch = cnlplib.schema(lib, "acopf")                # schemas are per model
 ```
 
 A mistyped name is refused at selection, with the witness symbol named, rather

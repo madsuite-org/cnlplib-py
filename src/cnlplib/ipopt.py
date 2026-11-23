@@ -5,7 +5,7 @@ __all__ = ["solve_ipopt"]
 
 
 def solve_ipopt(model, x0=None, **options):
-    """Solve `model` (anything implementing the cnlpmodels protocol) with
+    """Solve `model` (anything implementing the cnlplib protocol) with
     Ipopt, maximizing when the model does. Returns `(x, info)` as given by cyipopt. Options are passed to
     Ipopt verbatim (e.g. ``print_level=0``, ``tol=1e-8``)."""
     import cyipopt  # deferred: [ipopt] extra

@@ -87,7 +87,7 @@ def lib(name):
                     _LIBS[name] = load(cand)
                     return _LIBS[name]
         where = ":".join(_paths()) or "empty — call set_path() or set CNLPMODELS_PATH"
-        raise FileNotFoundError(f"{fname} not found on the cnlpmodels path ({where})")
+        raise FileNotFoundError(f"{fname} not found on the cnlplib path ({where})")
     return _LIBS[name]
 
 
@@ -403,7 +403,7 @@ def argtype(library, model):
     """What a model instantiates from: the types its entry point takes, in
     order, each optionally followed by `|` and a description.
 
-        cnlpmodels.argtype("@grid", "acopf")
+        cnlplib.argtype("@grid", "acopf")
         # "int|arg1,Vector{f64}|v0,Table{i::int pd::f64}|bus"
 
     `""` is a model that takes nothing (or a library that publishes no
@@ -433,8 +433,8 @@ def available_models(library):
     Every other entry point needs a prefix to start from; this is the one
     question a caller can ask having only a path:
 
-        for name in cnlpmodels.available_models("@grid"):
-            m = cnlpmodels.CModel("@grid", name, data)
+        for name in cnlplib.available_models("@grid"):
+            m = cnlplib.CModel("@grid", name, data)
 
     A library that publishes no catalogue returns an empty list; selecting a
     model by name still works if you know the name.
@@ -545,11 +545,11 @@ def _read_layout(lib, prefix, mid):
 class CModel:
     """A model instance from a loaded library.
 
-        lib = cnlpmodels.load("liblv.so")
-        m = cnlpmodels.CModel(lib, 1000, prefix="lv")          # lv_new(1000)
-        m = cnlpmodels.CModel("@acopf", bus, vmin, 100.0)      # search path
-        m = cnlpmodels.CModel("rosen", 1000)                   # ./rosen (file or bundle dir)
-        m = cnlpmodels.CModel("/opt/models/rosen", 1000)       # full path
+        lib = cnlplib.load("liblv.so")
+        m = cnlplib.CModel(lib, 1000, prefix="lv")          # lv_new(1000)
+        m = cnlplib.CModel("@acopf", bus, vmin, 100.0)      # search path
+        m = cnlplib.CModel("rosen", 1000)                   # ./rosen (file or bundle dir)
+        m = cnlplib.CModel("/opt/models/rosen", 1000)       # full path
 
     One library may carry **several models**, each under its own symbol
     prefix with its own schema and instances. A leading string argument
@@ -560,8 +560,8 @@ class CModel:
     anything else is passed as the argument. A mistyped name is still refused
     at selection, not as a raw `undefined symbol` several calls later:
 
-        m = cnlpmodels.CModel("@grid", "acopf", bus, 100.0)  # acopf_* in libgrid.so
-        d = cnlpmodels.CModel("@grid", "dcopf", bus)         # dcopf_*, same file
+        m = cnlplib.CModel("@grid", "acopf", bus, 100.0)  # acopf_* in libgrid.so
+        d = cnlplib.CModel("@grid", "dcopf", bus)         # dcopf_*, same file
 
     The arguments are the values the model is instantiated with — one per field
     of the library's schema, positionally, in the order the library publishes
@@ -707,9 +707,9 @@ class CModel:
         caller who never sees the Julia source can address a slice of the
         solution by name:
 
-            m = cnlpmodels.CModel("@grid", "acopf", bus)
+            m = cnlplib.CModel("@grid", "acopf", bus)
             m.get_vars()                       # {"pg": BlockRef, ...}
-            cnlpmodels.solution(x, m.get_vars("pg"))
+            cnlplib.solution(x, m.get_vars("pg"))
 
         Same spellings as CNLPModels.jl's `get_vars` / `get_cons` / `get_pars`.
         """
