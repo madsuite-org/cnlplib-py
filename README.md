@@ -32,7 +32,7 @@ model instances may coexist per library.
 
 ## The C ABI
 
-This package consumes **cnlp ABI 0.2**: [`cnlp.h`](https://github.com/madsuite-org/cnlp-abi/blob/master/cnlp.h)
+This package consumes **cnlp ABI 0.2**: [`cnlp.h`](https://github.com/madsuite-org/cnlplib/blob/main/cnlp.h)
 is the specification (every integer is `int64_t`, indices are 1-based inside the ABI and
 0-based here). A copy is vendored at `tests/fixtures/cnlp.h`, which the fixture compiles
 against so signature drift fails the build.
@@ -70,7 +70,7 @@ A mistyped name is refused at selection, with the witness symbol named, rather
 than surfacing as a raw `undefined symbol` several calls later. Omitting the
 name keeps the single-model spelling, where the prefix falls back to the
 library name — a one-model library is unaffected. This is the same selection
-spelling as CNLPModels.jl's `CNLPModel(lib, :acopf, ...)`.
+spelling as CNLPLib.jl's `CNLPModel(lib, :acopf, ...)`.
 
 ## Implementing a compatible library
 
@@ -78,5 +78,5 @@ Follow `cnlp.h`, and validate against `tests/fixtures/tinyqp.c` and this test su
 which compiles that file and checks every function against closed-form values.
 
 Sibling package:
-[`CNLPModels.jl`](https://github.com/madsuite-org/CNLPModels.jl) — the same
+[`CNLPLib.jl`](https://github.com/madsuite-org/CNLPLib.jl) — the same
 consumer for Julia.
